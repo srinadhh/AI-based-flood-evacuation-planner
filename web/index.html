@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Adyar Flood Evacuation AI Planner</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-layout">
+    <!-- LEFT COLUMN: Status & Interactive Map -->
+    <aside class="left-panel">
+      <!-- Signature Gradient Card -->
+      <div class="card gradient-card" id="basinCard">
+        <div class="gradient-card-header">
+          <span class="location-label">
+            <svg class="pin-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 12 8 12s8-6.75 8-12a8 8 0 0 0-8-8z"/>
+              <circle cx="12" cy="10" r="3"/>
+            </svg>
+            Adyar Basin, Chennai
+          </span>
+          <span class="badge live-badge">Live Monitor</span>
+        </div>
+        
+        <div class="gradient-card-body">
+          <div class="hero-stat" id="heroStat">0.12<span class="unit">m</span></div>
+          <div class="hero-subtext">Avg Adyar Flood Depth</div>
+        </div>
+
+        <div class="gradient-card-footer">
+          <div class="footer-chip">
+            <span class="chip-dot dot-green"></span> 2 Shelters Active
+          </div>
+          <div class="footer-chip">
+            <span class="chip-dot dot-amber"></span> IMD Alert Level 2
+          </div>
+        </div>
+      </div>
+
+      <!-- Map & Controls Card -->
+      <div class="card map-card">
+        <!-- Map Control Bar -->
+        <div class="map-controls">
+          <div class="mode-selector">
+            <button class="mode-btn active" id="btnDriving" data-mode="driving">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="9" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/><circle cx="7.5" cy="16.5" r="1.5"/><circle cx="16.5" cy="16.5" r="1.5"/></svg>
+              Driving (20cm)
+            </button>
+            <button class="mode-btn" id="btnWalking" data-mode="walking">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="2"/><path d="m10 22 2-7 2 7"/><path d="m8 13 4-4 4 4"/><path d="M12 9v6"/></svg>
+              Walking (15cm)
+            </button>
+          </div>
+
+          <div class="time-control">
+            <label for="timeSlider">Departure: <strong id="timeDisplay">t = 0 min</strong></label>
+            <input type="range" id="timeSlider" min="0" max="60" step="5" value="0">
+          </div>
+        </div>
+
+        <!-- The Leaflet Map Container -->
+        <div id="map"></div>
+
+        <!-- Floating Route Metrics Bar -->
+        <div class="route-metrics-bar" id="metricsBar">
+          <div class="metric-item">
+            <span class="metric-label">Status</span>
+            <span class="metric-value badge-safe" id="resStatus">READY</span>
+          </div>
+          <div class="metric-item">
+            <span class="metric-label">Distance</span>
+            <span class="metric-value" id="resDist">—</span>
+          </div>
+          <div class="metric-item">
+            <span class="metric-label">Est. Time</span>
+            <span class="metric-value" id="resTime">—</span>
+          </div>
+          <div class="metric-item">
+            <span class="metric-label">Destination</span>
+            <span class="metric-value truncate" id="resShelter">—</span>
+          </div>
+          <button class="btn-refresh" id="btnReplan" title="Recalculate route">Recalculate</button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- RIGHT COLUMN: Conversational Evacuation AI Assistant -->
+    <main class="chat-panel">
+      <!-- Assistant Header -->
+      <header class="chat-header">
+        <div class="assistant-meta">
+          <div class="ai-avatar">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2a10 10 0 1 0 10 10A10.011 10.011 0 0 0 12 2zm1 15h-2v-6h2zm0-8h-2V7h2z"/>
+            </svg>
+          </div>
+          <div>
+            <h1 class="assistant-title">Adyar Evacuation AI</h1>
+            <p class="assistant-subtitle">Time-aware safe evacuation route assistant</p>
+          </div>
+        </div>
+        <div class="header-badge">
+          <span class="pulse-dot"></span> Online • Lower Adyar
+        </div>
+      </header>
+
+      <!-- Message History Stream -->
+      <section class="chat-messages" id="chatMessages">
+        <!-- Welcome Message -->
+        <div class="message-row assistant-row">
+          <div class="message-bubble assistant-bubble">
+            <p><strong>Hello! I am your AI Flood Evacuation Planner for the Adyar River Basin.</strong></p>
+            <p>I calculate time-dependent safe routes using the OpenStreetMap road graph, applying published flood safety thresholds:</p>
+            <div class="code-box">
+              <div class="code-line"><span class="line-num">1</span> <span>Pedestrian Safe Limit : 0.15 m (ARR Book 6 / DEFRA FD2320)</span></div>
+              <div class="code-line"><span class="line-num">2</span> <span>Passenger Car Limit  : 0.20 m (Pregnolato et al. 2017 / FEMA)</span></div>
+              <div class="code-line"><span class="line-num">3</span> <span>Routing Algorithm     : Time-dependent Dijkstra to nearest safe shelter</span></div>
+            </div>
+            <p>Click anywhere on the map to set your origin, choose walking or driving, or ask me below!</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Quick Suggestion Chips -->
+      <div class="suggestion-chips">
+        <button class="chip-btn" data-prompt="Plan safest driving route to nearest shelter">🚗 Driving Route</button>
+        <button class="chip-btn" data-prompt="What is the safest walking path from Kotturpuram?">🚶 Walking Route</button>
+        <button class="chip-btn" data-prompt="Simulate Adyar river surge (+30cm) and check blocked bridges">🌊 Simulate River Surge</button>
+        <button class="chip-btn" data-prompt="Why is the low-lying bridge considered impassable?">⚠️ Safety Thresholds</button>
+      </div>
+
+      <!-- Chat Input Bar -->
+      <footer class="chat-input-bar">
+        <form id="chatForm" class="chat-form">
+          <input 
+            type="text" 
+            id="chatInput" 
+            class="chat-input" 
+            placeholder="Ask AI Evacuation Assistant..." 
+            autocomplete="off"
+          />
+          <button type="submit" id="sendBtn" class="send-btn" aria-label="Send Message">
+            <span>Send</span>
+          </button>
+        </form>
+      </footer>
+    </main>
+  </div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="app.js"></script>
+</body>
+</html>

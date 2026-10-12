@@ -1,0 +1,73 @@
+study_area:
+  name: "Adyar, Chennai"
+  bbox:
+    south: 13.000
+    north: 13.030
+    west: 80.215
+    east: 80.265
+  crs:
+    geographic: "EPSG:4326"
+    projected: "EPSG:32644"  # WGS 84 / UTM zone 44N (Chennai metric projection)
+
+thresholds:
+  # Literature-grounded safe maximum water depths (in meters)
+  # Walking: ARR Book 6 / DEFRA FD2320 (instability threshold ~0.15m)
+  walking_safe_depth_m: 0.15
+  # Driving: Pregnolato et al. 2017 / FEMA NWS (passenger car stalling at 0.15-0.20m)
+  driving_safe_depth_m: 0.20
+
+speeds:
+  # Base travel speeds in km/h
+  walking_speed_kmh: 4.5
+  driving_defaults_kmh:
+    motorway: 60.0
+    trunk: 50.0
+    primary: 40.0
+    secondary: 35.0
+    tertiary: 30.0
+    residential: 25.0
+    living_street: 15.0
+    unclassified: 25.0
+    default: 25.0
+
+profiles:
+  walking:
+    allowed_highways:
+      - footway
+      - path
+      - pedestrian
+      - steps
+      - living_street
+      - residential
+      - tertiary
+      - secondary
+      - primary
+      - track
+      - unclassified
+    ignore_oneway: true
+  driving:
+    allowed_highways:
+      - motorway
+      - motorway_link
+      - trunk
+      - trunk_link
+      - primary
+      - primary_link
+      - secondary
+      - secondary_link
+      - tertiary
+      - tertiary_link
+      - residential
+      - living_street
+      - unclassified
+    ignore_oneway: false
+
+default_shelters:
+  - id: "shelter_anna_univ"
+    name: "Anna University Relief Shelter"
+    lat: 13.0110
+    lon: 80.2355
+  - id: "shelter_adyar_ground"
+    name: "Adyar Community Shelter"
+    lat: 13.0055
+    lon: 80.2550
